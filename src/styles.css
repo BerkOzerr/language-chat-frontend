@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #18212f;
+  background: #f7f8fc;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .55; }
+:focus-visible { outline: 3px solid #a5b4fc; outline-offset: 2px; }
+.auth-bg { background: radial-gradient(circle at 15% 10%, #e8eaff 0, transparent 36%), radial-gradient(circle at 90% 90%, #dff7ef 0, transparent 35%), #f7f8fc; }
+.panel { background: rgba(255,255,255,.9); border: 1px solid #e7eaf1; box-shadow: 0 14px 40px rgba(27, 39, 74, .05); }
+.field { width: 100%; border: 1px solid #dce1ea; border-radius: 12px; padding: 11px 13px; background: white; color: #18212f; transition: border-color .15s, box-shadow .15s; }
+.field:focus { outline: none; border-color: #7168e8; box-shadow: 0 0 0 3px rgba(113,104,232,.12); }
+.btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 12px; padding: 11px 15px; background: #5b55d8; color: white; font-weight: 650; transition: transform .15s, background .15s; }
+.btn-primary:hover:not(:disabled) { background: #4942c4; transform: translateY(-1px); }
+.btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #e0e4ec; border-radius: 12px; padding: 10px 14px; color: #384255; background: white; font-weight: 600; }
+.btn-secondary:hover:not(:disabled) { background: #f8f9fc; }
+.eyebrow { color: #6862d9; font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+
+/* Theme tokens: warm amber in light mode, indigo in dark mode. */
+:root { color-scheme: light; --page-bg: #fffbeb; --surface: #ffffff; --surface-muted: #fef3c7; --text-main: #292524; --text-muted: #78716c; --line: #f3e8c8; --accent: #d97706; --accent-strong: #b45309; }
+html.dark { color-scheme: dark; --page-bg: #0b1020; --surface: #111a2e; --surface-muted: #1e1b4b; --text-main: #e0e7ff; --text-muted: #a5b4fc; --line: #293454; --accent: #818cf8; --accent-strong: #a5b4fc; }
+body { background: var(--page-bg); color: var(--text-main); transition: background-color .25s ease, color .25s ease; }
+.app-shell { background: var(--page-bg) !important; color: var(--text-main) !important; transition: background-color .25s ease, color .25s ease; }
+.app-header { background: color-mix(in srgb, var(--surface) 90%, transparent) !important; border-color: var(--line) !important; }
+.panel { background: color-mix(in srgb, var(--surface) 94%, transparent); border-color: var(--line); }
+.field { background: var(--surface); color: var(--text-main); border-color: var(--line); }
+.btn-secondary { color: var(--text-main); background: var(--surface); border-color: var(--line); }
+.btn-secondary:hover:not(:disabled) { background: var(--surface-muted); }
+.eyebrow { color: var(--accent-strong); }
+.theme-toggle { display: inline-flex; width: 42px; height: 42px; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--accent-strong); box-shadow: 0 3px 10px rgb(15 23 42 / .05); transition: transform .2s ease, background .2s ease, border-color .2s ease; }
+.theme-toggle:hover { transform: translateY(-2px) rotate(-4deg); background: var(--surface-muted); }
+.theme-toggle:active { transform: scale(.92); }
+.theme-toggle-icon { display: inline-flex; animation: theme-icon-in .28s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes theme-icon-in { from { opacity: 0; transform: rotate(-50deg) scale(.55); } to { opacity: 1; transform: rotate(0) scale(1); } }
+.brand-mark { transition: background .25s ease, box-shadow .25s ease; }
+.brand-dot { color: var(--accent); }
+
+/* Re-map the existing indigo utility palette to amber in light mode. */
+html:not(.dark) [class~="bg-indigo-600"] { background-color: #d97706 !important; }
+html:not(.dark) [class~="bg-indigo-50"] { background-color: #fffbeb !important; }
+html:not(.dark) [class~="text-indigo-600"], html:not(.dark) [class~="text-indigo-700"] { color: #b45309 !important; }
+html:not(.dark) [class~="text-indigo-100"] { color: #fef3c7 !important; }
+html:not(.dark) [class~="border-indigo-100"] { border-color: #fde68a !important; }
+html:not(.dark) [class~="hover:text-indigo-700"]:hover { color: #92400e !important; }
+html:not(.dark) [class~="focus:border-indigo-500"]:focus { border-color: #d97706 !important; }
+html:not(.dark) .btn-primary { background: #d97706; }
+html:not(.dark) .btn-primary:hover:not(:disabled) { background: #b45309; }
+html:not(.dark) .auth-bg { background: radial-gradient(circle at 15% 10%, #fef3c7 0, transparent 36%), radial-gradient(circle at 90% 90%, #ffedd5 0, transparent 35%), #fffbeb; }
+html.dark .auth-bg { background: radial-gradient(circle at 15% 10%, #312e81 0, transparent 38%), radial-gradient(circle at 90% 90%, #1e1b4b 0, transparent 38%), #0b1020; }
+
+/* Dark mode surfaces and readable neutral text across feature pages. */
+html.dark [class~="bg-white"], html.dark [class~="bg-white/90"], html.dark [class~="bg-white/80"] { background-color: var(--surface) !important; }
+html.dark [class~="bg-[#f7f8fc]"] { background-color: var(--page-bg) !important; }
+html.dark [class~="bg-slate-50"], html.dark [class~="bg-slate-50/60"], html.dark [class~="bg-slate-100"] { background-color: #18223a !important; }
+html.dark [class~="bg-slate-200"] { background-color: #293454 !important; }
+html.dark [class~="text-slate-900"], html.dark [class~="text-slate-800"], html.dark [class~="text-slate-700"], html.dark [class~="text-slate-600"], html.dark [class~="text-slate-500"], html.dark [class~="text-slate-400"] { color: var(--text-muted) !important; }
+html.dark [class~="text-slate-900"], html.dark [class~="text-slate-800"] { color: #e0e7ff !important; }
+html.dark [class~="border-slate-100"], html.dark [class~="border-slate-200"], html.dark [class~="border-slate-200/80"], html.dark [class~="border-slate-300"] { border-color: var(--line) !important; }
+html.dark [class~="border-indigo-100"] { border-color: #3730a3 !important; }
+html.dark [class~="bg-indigo-50"] { background-color: #1e1b4b !important; }
+html.dark [class~="bg-indigo-600"] { background-color: #4f46e5 !important; }
+html.dark [class~="text-indigo-600"], html.dark [class~="text-indigo-700"] { color: #a5b4fc !important; }
+html.dark [class~="text-indigo-100"] { color: #c7d2fe !important; }
+html.dark [class~="hover:bg-slate-50"]:hover { background-color: #1e293b !important; }
+html.dark .panel { box-shadow: 0 14px 40px rgb(0 0 0 / .18); }
+html.dark .field::placeholder { color: #818cf8; }
+html.dark .btn-primary { background: #4f46e5; }
+html.dark .btn-primary:hover:not(:disabled) { background: #4338ca; }
+html.dark .btn-secondary { color: #e0e7ff; }
+html.dark .theme-toggle { color: #c7d2fe; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+/* Keep status chips and decorative cards inside the selected brand palette too. */
+html:not(.dark) [class~="bg-emerald-50"], html:not(.dark) [class~="bg-rose-50"] { background-color: #fef3c7 !important; }
+html:not(.dark) [class~="text-emerald-600"], html:not(.dark) [class~="text-emerald-700"], html:not(.dark) [class~="text-emerald-800"], html:not(.dark) [class~="text-rose-600"], html:not(.dark) [class~="text-rose-800"], html:not(.dark) [class~="text-amber-700"] { color: #92400e !important; }
+html:not(.dark) [class~="border-rose-100"] { border-color: #fde68a !important; }
+html.dark [class~="bg-emerald-50"], html.dark [class~="bg-rose-50"], html.dark [class~="bg-amber-50"] { background-color: #1e1b4b !important; }
+html.dark [class~="text-emerald-600"], html.dark [class~="text-emerald-700"], html.dark [class~="text-emerald-800"], html.dark [class~="text-rose-600"], html.dark [class~="text-rose-800"], html.dark [class~="text-amber-700"] { color: #a5b4fc !important; }
+html.dark [class~="border-rose-100"] { border-color: #3730a3 !important; }
