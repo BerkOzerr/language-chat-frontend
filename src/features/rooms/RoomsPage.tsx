@@ -14,10 +14,9 @@ const roomSchema = z.object({
   description: z.string().max(500, "En fazla 500 karakter.").optional(),
   language_code: z.string().min(2),
   language_level: z.string().optional(),
-  max_members: z.coerce.number().int().min(2).max(10)
+  max_members: z.number().int().min(2).max(10)
 });
 type RoomValues = z.infer<typeof roomSchema>;
-const flags: Record<string, string> = { tr:"🇹🇷", en:"🇬🇧", de:"🇩🇪", fr:"🇫🇷", es:"🇪🇸", it:"🇮🇹", pt:"🇵🇹", ru:"🇷🇺", ja:"🇯🇵", ko:"🇰🇷", zh:"🇨🇳", ar:"🇸🇦" };
 
 export function RoomsPage() {
   const queryClient = useQueryClient();
@@ -35,7 +34,9 @@ export function RoomsPage() {
   const createMutation = useMutation({
     mutationFn: (values: RoomValues) => api.createRoom({ ...values, description: values.description || undefined, language_level: values.language_level || undefined }),
     onSuccess: async ({ room }) => { await queryClient.invalidateQueries({ queryKey:["rooms"] }); setShowCreate(false); createForm.reset(); navigate(`/rooms/${room.id}`); },
-    onError: (e: Error) => setError(e instanceof ApiError ? e.message : e.message)
+    onError: (e: Error) => setError(e instanceof ApiError && e.code === "registration_required"
+      ? `${e.message} Profil sayfasından misafir hesabını kalıcı hale getirebilirsin.`
+      : e.message)
   });
   const rooms = useMemo(() => (roomsQuery.data?.rooms ?? []).filter((room) => `${room.name} ${room.description ?? ""}`.toLowerCase().includes(search.toLowerCase())), [roomsQuery.data, search]);
   return <div>
@@ -50,7 +51,7 @@ export function RoomsPage() {
         <label className="block text-sm font-semibold">Oda adı<input className="field mt-2" placeholder="English Café" {...createForm.register("name")}/>{createForm.formState.errors.name && <span className="text-xs text-rose-600">{createForm.formState.errors.name.message}</span>}</label>
         <label className="block text-sm font-semibold">Açıklama <span className="font-normal text-slate-400">(isteğe bağlı)</span><textarea className="field mt-2 resize-y" rows={2} placeholder="Bu odada neler konuşacaksınız?" {...createForm.register("description")}/></label>
         <div className="grid grid-cols-2 gap-3"><label className="block text-sm font-semibold">Dil<select className="field mt-2" {...createForm.register("language_code")}>{LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}</select></label><label className="block text-sm font-semibold">Seviye<select className="field mt-2" {...createForm.register("language_level")}>{LEVELS.map(l => <option key={l} value={l}>{l}</option>)}</select></label></div>
-        <label className="block text-sm font-semibold">Maksimum katılımcı<select className="field mt-2" {...createForm.register("max_members")}>{Array.from({length:9},(_,i)=>i+2).map(n=><option key={n} value={n}>{n} kişi</option>)}</select></label>
+        <label className="block text-sm font-semibold">Maksimum katılımcı<select className="field mt-2" {...createForm.register("max_members", { valueAsNumber: true })}>{Array.from({length:9},(_,i)=>i+2).map(n=><option key={n} value={n}>{n} kişi</option>)}</select></label>
         <button className="btn-primary w-full" disabled={createMutation.isPending}>{createMutation.isPending ? <LoaderCircle className="animate-spin" size={16}/> : <Plus size={16}/>} Odayı oluştur</button>
       </form></section></div>}
   </div>;
@@ -59,5 +60,5 @@ export function RoomsPage() {
 function RoomCard({ room, busy, onJoin }: { room: Room; busy: boolean; onJoin: () => void }) {
   const lang = LANGUAGES.find(l => l.code === room.language_code)?.label ?? room.language_code;
   const full = room.member_count >= room.max_members;
-  return <article className="panel group rounded-3xl p-5 transition hover:-translate-y-1 hover:shadow-lg sm:p-6"><div className="flex items-start justify-between"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-2xl">{flags[room.language_code] ?? "🌐"}</span><span className={`rounded-full px-3 py-1.5 text-xs font-bold ${full ? "bg-slate-100 text-slate-500" : "bg-emerald-50 text-emerald-700"}`}>{full ? "Dolu" : "● Katılıma açık"}</span></div><h2 className="mt-5 text-lg font-extrabold">{room.name}</h2><p className="mt-2 min-h-10 text-sm leading-5 text-slate-500">{room.description || `${lang} konuşma pratiği için bir araya gel.`}</p><div className="mt-5 flex flex-wrap gap-2"><span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-600">{lang}</span>{room.language_level && <span className="rounded-lg bg-indigo-50 px-2.5 py-1.5 text-xs font-bold text-indigo-700">{room.language_level}</span>}</div><div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><span className="flex items-center gap-2 text-xs font-semibold text-slate-500"><Users size={15}/>{room.member_count}/{room.max_members} kişi</span><button className="btn-primary !rounded-xl !px-3.5 !py-2.5 text-sm" disabled={busy || full} onClick={onJoin}>{busy ? "Katılıyor..." : "Katıl"} <ArrowRight size={15}/></button></div></article>;
+  return <article className="panel group rounded-3xl p-5 transition hover:-translate-y-1 hover:shadow-lg sm:p-6"><div className="flex items-start justify-between"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-2xl"><span className="text-sm font-black tracking-wide text-indigo-700">{room.language_code.toUpperCase()}</span></span><span className={`rounded-full px-3 py-1.5 text-xs font-bold ${full ? "bg-slate-100 text-slate-500" : "bg-emerald-50 text-emerald-700"}`}>{full ? "Dolu" : "● Katılıma açık"}</span></div><h2 className="mt-5 text-lg font-extrabold">{room.name}</h2><p className="mt-2 min-h-10 text-sm leading-5 text-slate-500">{room.description || `${lang} konuşma pratiği için bir araya gel.`}</p><div className="mt-5 flex flex-wrap gap-2"><span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-600">{lang}</span>{room.language_level && <span className="rounded-lg bg-indigo-50 px-2.5 py-1.5 text-xs font-bold text-indigo-700">{room.language_level}</span>}</div><div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><span className="flex items-center gap-2 text-xs font-semibold text-slate-500"><Users size={15}/>{room.member_count}/{room.max_members} kişi</span><button className="btn-primary !rounded-xl !px-3.5 !py-2.5 text-sm" disabled={busy || full} onClick={onJoin}>{busy ? "Katılıyor..." : "Katıl"} <ArrowRight size={15}/></button></div></article>;
 }

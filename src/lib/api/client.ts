@@ -1,4 +1,4 @@
-import type { ApiErrorBody, AuthResponse, Message, Room, User } from "./types";
+import type { ApiErrorBody, AuthResponse, CreatedRoom, MessagesPage, Room, User } from "./types";
 
 const configuredBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 // In development, call the same-origin Vite proxy. This avoids localhost/127.0.0.1 CORS mismatches.
@@ -28,23 +28,44 @@ export class ApiError extends Error {
   }
 }
 
+// Oturum geçersiz olunca (401) arayüzün de çıkış yapması için AuthProvider bunu kaydeder.
+let unauthorizedHandler: (() => void) | null = null;
+export function setUnauthorizedHandler(handler: (() => void) | null) { unauthorizedHandler = handler; }
+
+function formatWait(seconds: number): string {
+  return seconds < 60 ? `${Math.max(1, Math.ceil(seconds))} saniye` : `${Math.ceil(seconds / 60)} dakika`;
+}
+
 async function request<T>(path: string, init: RequestInit = {}, authenticated = true): Promise<T> {
   const token = sessionStore.getToken();
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
-      ...(authenticated && token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init.headers
-    }
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl}${path}`, {
+      ...init,
+      headers: {
+        Accept: "application/json",
+        ...(init.body ? { "Content-Type": "application/json" } : {}),
+        ...(authenticated && token ? { Authorization: `Bearer ${token}` } : {}),
+        ...init.headers
+      }
+    });
+  } catch {
+    throw new ApiError(0, "network_error", "Sunucuya ulaşılamadı. İnternet bağlantını kontrol edip tekrar dene.");
+  }
   let body: unknown;
   try { body = await response.json(); } catch { body = undefined; }
   if (!response.ok) {
     const data = (body && typeof body === "object" ? body : {}) as ApiErrorBody;
-    if (response.status === 401) sessionStore.clear();
-    throw new ApiError(response.status, data.error, data.message || `İstek başarısız (${response.status}).`, data);
+    // Yalnızca oturumlu bir istek 401 aldıysa oturum bitmiştir (yanlış şifreyle giriş 401'i bunu tetiklemez).
+    if (response.status === 401 && authenticated && token) {
+      sessionStore.clear();
+      unauthorizedHandler?.();
+    }
+    const wait = typeof data.retryAfterSeconds === "number" ? data.retryAfterSeconds : null;
+    const message = response.status === 429 && wait !== null
+      ? `Çok fazla istek gönderdin. ${formatWait(wait)} sonra tekrar dene.`
+      : data.message || `İstek başarısız (${response.status}).`;
+    throw new ApiError(response.status, data.error, message, data);
   }
   return body as T;
 }
@@ -66,9 +87,10 @@ export const api = {
     request<{ user: User }>("/users/me", { method: "PATCH", body: JSON.stringify(input) }),
   rooms: () => request<{ rooms: Room[]; count: number }>("/rooms"),
   createRoom: (input: { name: string; description?: string; language_code: string; language_level?: string; max_members: number }) =>
-    request<{ room: Room }>("/rooms", json(input)),
+    request<{ room: CreatedRoom }>("/rooms", json(input)),
   joinRoom: (roomId: string) => request<{ status: string; message: string }>(`/rooms/${encodeURIComponent(roomId)}/join`, json({})),
   leaveRoom: (roomId: string) => request<{ status: string; message: string }>(`/rooms/${encodeURIComponent(roomId)}/leave`, json({})),
-  messages: (roomId: string) => request<{ messages: Message[]; nextCursor?: string | null }>(`/rooms/${encodeURIComponent(roomId)}/messages?limit=50`),
-  sendMessage: (roomId: string, content: string) => request<{ message: Message }>(`/rooms/${encodeURIComponent(roomId)}/messages`, { method: "POST", body: JSON.stringify({ content }) })
+  messages: (roomId: string, cursor?: string | null) =>
+    request<MessagesPage>(`/rooms/${encodeURIComponent(roomId)}/messages?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
+  sendMessage: (roomId: string, content: string) => request<{ message: import("./types").Message }>(`/rooms/${encodeURIComponent(roomId)}/messages`, { method: "POST", body: JSON.stringify({ content }) })
 };

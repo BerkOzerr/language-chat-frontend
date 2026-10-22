@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { api, sessionStore } from "../lib/api/client";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { api, sessionStore, setUnauthorizedHandler } from "../lib/api/client";
 import type { AuthResponse, User } from "../lib/api/types";
 
 interface AuthContextValue {
@@ -8,6 +8,8 @@ interface AuthContextValue {
   signIn: (response: AuthResponse) => void;
   refreshUser: () => Promise<User>;
   signOut: () => Promise<void>;
+  /** Sunucuya istek atmadan yerel oturumu bitirir (oturum zaten sunucuda kapanmışsa). */
+  endSession: () => void;
 }
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -29,7 +31,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try { if (sessionStore.getToken()) await api.logout(); }
     finally { sessionStore.clear(); setToken(null); setUser(null); }
   }, []);
-  const value = useMemo(() => ({ user, token, signIn, refreshUser, signOut }), [user, token, signIn, refreshUser, signOut]);
+  const endSession = useCallback(() => { sessionStore.clear(); setToken(null); setUser(null); }, []);
+  // API 401 dönerse (oturum süresi doldu, başka yerden çıkış yapıldı) arayüz de çıkış yapar.
+  useEffect(() => { setUnauthorizedHandler(endSession); return () => setUnauthorizedHandler(null); }, [endSession]);
+  const value = useMemo(() => ({ user, token, signIn, refreshUser, signOut, endSession }), [user, token, signIn, refreshUser, signOut, endSession]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 export function useAuth() {
